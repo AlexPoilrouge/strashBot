@@ -1,0 +1,22 @@
+{
+    "version": "0.1.0",
+    "build": "",
+
+    "token": "",
+
+    "masterID": "",
+
+    "smashGuildID": "",
+
+
+    "botChannelID": "",
+
+    "online": {
+        "reacMessageID": "",
+        "availableEmoteID": "",
+
+        "channelID": "",
+
+        "roleID": ""
+    }
+}
