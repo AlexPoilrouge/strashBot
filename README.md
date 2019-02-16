@@ -37,7 +37,7 @@ All the IDs can be found from your Discord App, by switching to developer mode.
 
 ##### Launch bot
 
-`npm bot.js`
+`node bot.js`
 
 
 
