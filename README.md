@@ -42,6 +42,7 @@ All the IDs can be found from your Discord App, by switching to developer mode.
 
 
 #####Release and use
+
 This bot was made for personal needs and use. The code is release on the
 off chance it might be of use to someone but without the intention of providing
 any form of utility software or service in a rigorous manner.
