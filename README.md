@@ -12,6 +12,7 @@ Bot written in node.js.
 #### Dependencies
 
 * npm
+* Node.js
 * discord.js
 
 
