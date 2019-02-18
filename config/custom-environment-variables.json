@@ -13,7 +13,7 @@
         "botChannelID": "STRASHBOT_BOTCHANNELID",
 
         "online": {
-            "reacMessageID": "STRASHBOT_ONLINE_REACMESSGEID",
+            "reacMessageID": "STRASHBOT_ONLINE_REACMESSAGEID",
             "availableEmoteID": "STRASHBOT_ONLINE_AVAILABLEEMOTEID",
 
             "channelID": "STRASHBOT_ONLINE_CHANNELID",
