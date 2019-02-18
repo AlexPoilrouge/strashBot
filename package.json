@@ -1,0 +1,11 @@
+{
+  "name": "strashbot",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AlexPoilrouge/strashBot.git"
+  },
+  "dependencies": {
+    "config": "^3.0.1",
+    "discord.js": "~11.4.0"
+  }
+}
