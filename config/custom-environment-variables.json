@@ -1,0 +1,24 @@
+{
+    "StrashBot": {
+        "version": "STRASHBOT_VER",
+        "build": "STRASHBOT_BUILD",
+
+        "token": "STRASHBOT_TOKEN",
+
+        "masterID": "STRASHBOT_MASTERID",
+
+        "smashGuildID": "STRASHBOT_GUILDID",
+
+
+        "botChannelID": "STRASHBOT_BOTCHANNELID",
+
+        "online": {
+            "reacMessageID": "STRASHBOT_ONLINE_REACMESSGEID",
+            "availableEmoteID": "STRASHBOT_ONLINE_AVAILABLEEMOTEID",
+
+            "channelID": "STRASHBOT_ONLINE_CHANNELID",
+
+            "roleID": "STRASHBOT_ONLINE_ROLEID"
+        }
+    }
+}

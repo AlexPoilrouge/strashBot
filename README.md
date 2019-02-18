@@ -40,6 +40,14 @@ Alternatively, you can configure the bot using the `NODE_CONFIG` env variable:
 
 `export NODE_CONFIG='{"StrashBot":{"version":"0.1.0","build" … }}'`
 
+Also, you can configure individually every variable by setting each variable listed in the `config/custom-environment-variables.json` file as env variables.
+For example:
+```
+export STRASHBOT_VER="0.1.5b"
+export STRASHBOT_BUILD="custom-build"
+…
+```
+
 
 ##### Launch bot
 
