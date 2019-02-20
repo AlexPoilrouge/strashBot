@@ -12,6 +12,7 @@ class SmashBot extends Discord.Client{
 
         this.worker= new wk.Worker(this);
 
+        this.worker.master= config.get('StrashBot.masterID');
         this.worker.guildID= config.get('StrashBot.smashGuildID');
         this.worker.botChannel= config.get('StrashBot.botChannelID');
         this.worker.onlineChannel= config.get('StrashBot.online.channelID');
@@ -60,6 +61,7 @@ client.on('ready', ()=>{
 client.on('message', (message)=>{
     if(message.author.id === client.user.id) return; // Prevent bot from responding to its own messages
 
+   // console.log(`mmmm ${message.content}`);
 
     if(message.channel.type === 'dm'){
         console.log(`Recieving DM command from ${message.author.id}`);
@@ -77,6 +79,10 @@ client.on('messageReactionAdd', (reaction, user) => {
 
 client.on('messageReactionRemove', (reaction, user) => {
 	client.worker.reactionRemove(reaction, user);
+});
+
+client.on('guildMemberRemove', (member) => {
+    client.worker.memberRemove(member);
 });
 
 client.on('error', (error)=>{

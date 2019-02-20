@@ -1,5 +1,7 @@
 const ogm= require('./onlineGroupManager');
 
+const fcm= require('./friendCodeManager');
+
 class Worker{
     
 
@@ -7,6 +9,7 @@ class Worker{
         this.bot= bot;
 
         this._ogm= null;
+        this._fcm= null;
 
         this._errorHandlerSteup();
     }
@@ -17,6 +20,7 @@ class Worker{
 
     ready_setup(){
         this._readyOGM();
+        this._readyFCM();
     }
 
     _errorHandlerSteup(){
@@ -103,6 +107,22 @@ class Worker{
         });
     }
 
+    _readyFCM(){
+        let guild= this.bot.guilds.get(this._guildID);
+        if(this._baseDataCheck.validity({guild:guild},this._baseDataCheck.GUILDOK)){
+            this._fcm= new fcm.FriendCodeManager(this.bot, guild);
+            this._fcm.adminID= this._masterID;
+    
+            this._fcm.loadFriendCodes();
+            this._fcm.checkMembers();
+        }
+        else{
+            console.log(this._baseDataCheck.report(obj));
+
+            this.bot.destroy();
+        }
+    }
+
     reactionAdd(reaction, user){
         if (this._ogm!==null && user.id!==this.bot.user.id){
             this._ogm.reactionAdd(reaction,user);
@@ -123,7 +143,7 @@ class Worker{
 
     processCommand(message){
         let splitCmd= message.content.substr(1).split(" ");
-        let coreCmd= splitCmd[0];
+        let coreCmd= splitCmd[0].toLowerCase();
         let args= splitCmd.slice(1);
 
         if(message.channel.id === this._onlineChannelID){
@@ -134,6 +154,12 @@ class Worker{
             else if(coreCmd==="kijou" && this._ogm!==null){
                 console.log("[cmd] !kijou");
                 this._ogm.kijouRequestFrom(message.author);
+            }
+            else if((coreCmd==="codeami" || coreCmd==="ca" || coreCmd==="friendcode" || coreCmd==="fc" || coreCmd==="codami" || coreCmd==="kodami" || coreCmd==="code-ami"
+                    || coreCmd==="friend-code") && this._fcm)
+            {
+                console.log(`[cmd] !${coreCmd}`);
+                this._fcm.command(args, message.author, message.channel);
             }
         }
     }
@@ -146,14 +172,14 @@ class Worker{
 
     processDMCommand(message){
         let splitCmd= message.content.substr(1).split(" ");
-        let coreCmd= splitCmd[0];
+        let coreCmd= splitCmd[0].toLowerCase();
         let args= splitCmd.slice(1);
 
         if(coreCmd==="ping"){
             console.log("[dm cmd] !ping");
             message.author.send("'sup?");
         }
-        else if(coreCmd==="kijou" && this._ogm!==null){
+        else if((coreCmd==="kijou" || coreCmd==="@kijou") && this._ogm){
             console.log("[dm cmd] !kijou");
             this._ogm.kijouRequestFrom(message.author);
         }
@@ -165,20 +191,44 @@ class Worker{
             console.log(`[dm cmd] !${coreCmd}`);
             this._cmdHelpRequestFrom(message.author);
         }
-    }
-
-    _cmdHelpRequestFrom(user){
-        if(this._ogm){
-            let txt= `Les commandes ci-dessous sont disponibles.\n( 📬 = 'via DM sur <@${this.bot.user.id}>; 🎮 = 'via le salon <#${this._onlineChannelID}>' )\n\n`;
-
-            txt+= "\t`!kijou`\t📬🎮\n\t\t*liste les joueurs dispo pour du online*\n";
-            txt+= "\t`!version | !ver | !v`\t📬\n\t\t*version courante du bot*\n";
-            txt+= "\t`!help | !h | !cmd`\t📬\n\t\t*affiche cette aide*\n"
-
-            user.send(txt);
+        else if((coreCmd==="codeami" || coreCmd==="ca" || coreCmd==="friendcode" || coreCmd==="fc" || coreCmd==="codami" || coreCmd==="kodami" || coreCmd==="code-ami"
+                    || coreCmd==="friend-code") && this._fcm)
+        {
+            console.log(`[dm cmd] !${coreCmd}`);
+            this._fcm.command(args, message.author, message.channel);
         }
     }
 
+    _cmdHelpRequestFrom(user){
+        let txt= `Les commandes ci-dessous sont disponibles.\n( 📬 = 'via DM sur <@${this.bot.user.id}>; 🎮 = 'via le salon <#${this._onlineChannelID}>' )\n\n`;
+
+        if(this._ogm){
+            txt+= "\t`!kijou`\t📬🎮\n\t\t*liste les joueurs dispo pour du online*\n";
+        }
+        if(this._fcm){
+            txt+="\t`!ca | !codeami`\t📬🎮\n\t\t*gestion des codes ami; tape `!codeami !help` pour plus d'infos*\n"
+        }
+        txt+= "\t`!version | !ver | !v`\t📬\n\t\t*version courante du bot*\n";
+        txt+= "\t`!help | !h | !cmd`\t📬\n\t\t*affiche cette aide*\n\n";
+
+        txt+= `Fais aussi un tour du côté du salon <#${this._botChannelID}> puis <#${this._onlineChannelID}> pour t'aider à trouver des games`;
+
+        user.send(txt);
+    }
+
+    memberRemove(member){
+        if(member.guild.id===this._guildID){
+            if(this._fcm && this._fcm.getFriendCode(member.user)){
+                console.log(`[Worker] ${member.user.id} is no longer part of the guild, deleting friend code`);
+                this._fcm.deleteFriendCode(member.user);
+            }
+        }
+    }
+
+    set master(id){
+        this._masterID= id;
+    }
+    
     set guildID(id){
         this._guildID= id;
     }

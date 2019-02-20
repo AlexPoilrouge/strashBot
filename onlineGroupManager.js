@@ -18,7 +18,7 @@ class OnlineGroupManager{
 
     reactionAdd(reaction,user){
         if(reaction.message.id===this._refMsg.id && reaction.emoji.id===this._reactEmote.id){
-            console.log(`Reaction emoji ${reaction.emoji.id} added to msg ${reaction.message.id}`);
+            console.log(`[OGM reac Monitor] Reaction emoji ${reaction.emoji.id} added to msg ${reaction.message.id}`);
             
             this._addOnlineRoleTo(user);
         }
@@ -26,7 +26,7 @@ class OnlineGroupManager{
 
     reactionRemove(reaction,user){
         if(reaction.message.id===this._refMsg.id && reaction.emoji.id===this._reactEmote.id){
-            console.log(`Reaction emoji ${reaction.emoji.id} removed from msg ${reaction.message.id}`);
+            console.log(`[OGM reac Monitor] Reaction emoji ${reaction.emoji.id} removed from msg ${reaction.message.id}`);
 
             this._removeOnlineRoleFrom(user);
         }
@@ -49,8 +49,6 @@ class OnlineGroupManager{
             }
 
             while( onlineUsers.length>0 ){
-                console.log("a");
-
                 let c= reply.length;
 
                 let u= onlineUsers[onlineUsers.length-1];
@@ -83,10 +81,10 @@ class OnlineGroupManager{
             let member= this._botChannel.guild.member(user);
             if(member!=null && !(member.roles.has(this._onlineRole))){
                 member.addRole(this._onlineRole).then(member => {
-                    console.log(`adding role ${this._onlineRole.id} to ${user.id}`);
+                    console.log(`[OGM] adding role ${this._onlineRole.id} to ${user.id}`);
                 })
                 .catch(err => {
-                    console.log("[!] Couldn't add role "+this._onlineRole.name);
+                    console.log("[OGM] Couldn't add role "+this._onlineRole.name);
                     console.log(err);
                 });
             }
@@ -98,10 +96,10 @@ class OnlineGroupManager{
             let member= this._botChannel.guild.member(user);
             if(member!=null && !(member.roles.has(this._onlineRole))){;
                 member.removeRole(this._onlineRole).then(member => {
-                    console.log(`Removing role ${this._onlineRole.id} from ${user.id}`);
+                    console.log(`[OGM] Removing role ${this._onlineRole.id} from ${user.id}`);
                 })
                 .catch(err => {
-                    console.log("[!] Couldn't remove role "+this._onlineRole.name);
+                    console.log("[OGM !] Couldn't remove role "+this._onlineRole.name);
                     console.log(err);
                 });
             }
@@ -115,7 +113,7 @@ class OnlineGroupManager{
                     thenFn(user);
                 });})
                 .catch( err => {
-                    console.log("[!] Couldn't fetch users for reaction "+reaction.emoji.name+" on message "+this._refMsg.id);
+                    console.log("[OGM reac get] Couldn't fetch users for reaction "+reaction.emoji.name+" on message "+this._refMsg.id);
                     console.log(err);
                 })
                 .finally(() => {
@@ -126,7 +124,7 @@ class OnlineGroupManager{
     }
 
     _checkReactions(){
-        console.log("Ensuring every reactions corresponds to online role ownership")
+        console.log("[OGM check] Ensuring every reactions corresponds to online role ownership")
         this.__fetchEachUserFromReactionMessage(user => {
             this._addOnlineRoleTo(user);
         });
@@ -141,7 +139,7 @@ class OnlineGroupManager{
     }
 
     _checkOnlineRole(){
-        console.log("Ensuring every online role ownership corresponds to reaction")
+        console.log("[OGM check] Ensuring every online role ownership corresponds to reaction")
         let usersWithRole = this._getOnlineRoleUsers();
         
         let membersReactUID= [];
@@ -161,7 +159,7 @@ class OnlineGroupManager{
     _setRefMessage(){
         this._refMsg.react(this._reactEmote).then( msgReaction => {;} )
             .catch(err => {
-                console.log("[!] failed to react "+this._reactEmote.name+" on message "+this._refMsg.id);
+                console.log("[OGM refMessage!] failed to react "+this._reactEmote.name+" on message "+this._refMsg.id);
                 console.log(err);
             });
     }
