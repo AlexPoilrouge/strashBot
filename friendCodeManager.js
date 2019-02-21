@@ -276,6 +276,29 @@ class FriendCodeManager{
         return false;
     }
 
+    _adminList(user){
+        if(user.id===this._adminID){
+            let txt= "";
+            Object.keys(this.fcList).forEach(key =>{
+                let tmp=`<@${key}> : ${this.fcList[key]}\n`;
+
+                if((txt.length+tmp.length)>2000){
+                    user.send(txt);
+
+                    txt= tmp;
+                }
+                else if(tmp.length>2000){
+                    console.log("[FC adminList] line too long wtf?!");
+                }
+                else{
+                    txt+= tmp;
+                }
+            });
+
+            user.send(txt);
+        }
+    }
+
     _subCommand(cmd, args, user){
         console.log(`[FC subCmd] !codeamdi !${cmd}`);
         let coreCmd= cmd.substr(1);
@@ -288,22 +311,28 @@ class FriendCodeManager{
         else if(coreCmd==="help" || coreCmd==="h"){
             let txt= "Les modalités d'utilisation de la commande `!codeami` sont les suivantes: \n\n";
 
-            txt+="\t`!codeami`\n\t\tAffiche ton code ami sur le salon courant.\n";
-            txt+="\t`!codeami SW-XXXX-XXXX-XXXX`\n\t\t(avec X des chiffres, of course) Ajoute ou met à jour ton code ami.\n";
-            txt+="\t`!codeami [@]<username|pseudo>`\n\t\tCherche le code ami de la personne désignée (@ optionnel pour éviter la mention).\n";
+            txt+="\t`!codeami`\n\t\t*Affiche ton code ami sur le salon courant.*\n";
+            txt+="\t`!codeami SW-XXXX-XXXX-XXXX`\n\t\t*(avec X des chiffres, of course) Ajoute ou met à jour ton code ami.*\n";
+            txt+="\t`!codeami [@]<username|pseudo>`\n\t\t*Cherche le code ami de la personne désignée (@ optionnel pour éviter la mention).*\n";
             if(user.id===this._adminID){
-                txt+="\t`!codeami XXXXXXXXXXXXXXXXXX SW-XXXX-XXXX-XXXX`\n\t\t**ADMIN** - Ajoute code ami pour un user ID\n";
+                txt+="\t`!codeami XXXXXXXXXXXXXXXXXX SW-XXXX-XXXX-XXXX`\n\t\t**ADMIN** - *Ajoute code ami pour un user ID*\n";
             }
 
-            txt+="\t`!codeami !delete|!d`\n\t\tEfface ton code ami.\n";
+            txt+="\t`!codeami !delete|!d`\n\t\t*Efface ton code ami.*\n";
             if(user.id===this._adminID){
-                txt+="\t`!codeami !delete XXXXXXXXXXXXXXXXXX`\n\t\t**ADMIN** - Efface code ami pour un user ID\n";
+                txt+="\t`!codeami !delete XXXXXXXXXXXXXXXXXX`\n\t\t**ADMIN** - *Efface code ami pour un user ID*\n";
+                txt+="\t`!codeami !list|!l`\n\t\t**ADMIN** - *Liste les codes ami enregistrés*\n";
             }
-            txt+="\t`!codeami !help|!h`\n\t\tAffiche cette aide.\n\n";
+            txt+="\t`!codeami !help|!h`\n\t\t*Affiche cette aide.*\n\n";
 
             txt+="NB: Le code ami d'un membre est effacé si celui-ci est kické ou quitte le serveur."
 
             user.send(txt);
+
+            return true;
+        }
+        else if(user.id===this._adminID && (coreCmd==="list" || coreCmd==="l")){
+            this._adminList(user);
 
             return true;
         }
