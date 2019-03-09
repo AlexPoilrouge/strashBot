@@ -94,6 +94,8 @@ class FriendCodeManager{
             }
 
             if(b){
+                this.bot.worker.request({name:'friend-code-update', user: user, friendCode: test});
+
                 this.saveFriendCodesAsync();
             }
         }
@@ -132,14 +134,14 @@ class FriendCodeManager{
             lookUpID(v, name);
         }
         else{
-            await Object.keys(this.fcList).some(async key =>{
+            await Promise.all(Object.keys(this.fcList).map(async key =>{
                 await this.bot.fetchUser(key).then(u => {
                     console.log(`fetch user for key ${key}`)
                 })
                 .catch(err => {
                     console.log(`[FC look] Couldn't fetch user from ${key}`);
                 });
-            })
+            }));
 
             let tn= (name.startsWith('@')?name.slice(1):name);
 
@@ -305,6 +307,8 @@ class FriendCodeManager{
 
         if (coreCmd==="delete" || coreCmd==="d"){
             this.deleteFriendCode(user, args[0]);
+
+            this.bot.worker.request({name: 'friend-code-delete', user: user});
 
             return true;
         }

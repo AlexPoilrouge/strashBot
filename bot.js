@@ -2,7 +2,7 @@
 const Discord= require('discord.js');
 
 const wk= require('./worker');
-const utils= require('./utils')
+const utils= require('./utils');
 
 const config= require('config');
 
@@ -61,14 +61,12 @@ client.on('ready', ()=>{
 client.on('message', (message)=>{
     if(message.author.id === client.user.id) return; // Prevent bot from responding to its own messages
 
-   // console.log(`mmmm ${message.content}`);
+    // console.log(`mmmm ${message.content}`);
 
     if(message.channel.type === 'dm'){
-        console.log(`Recieving DM command from ${message.author.id}`);
         client.worker.dMessage(message);
     }
     else{
-        console.log(`Recieving command from channel ${message.channel.id}`);
         client.worker.processMessage(message);
     }
 });
@@ -79,6 +77,10 @@ client.on('messageReactionAdd', (reaction, user) => {
 
 client.on('messageReactionRemove', (reaction, user) => {
 	client.worker.reactionRemove(reaction, user);
+});
+
+client.on('messageDelete', (message) => {
+	client.worker.messageDelete(message);
 });
 
 client.on('guildMemberRemove', (member) => {

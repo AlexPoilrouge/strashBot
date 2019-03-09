@@ -1,8 +1,8 @@
 
 
 class OnlineGroupManager{
-    constructor(client, botChannel, onlineRole, refMsg, reactEmote){
-        this._client= client;
+    constructor(bot, botChannel, onlineRole, refMsg, reactEmote){
+        this._bot= bot;
         this._botChannel= botChannel;
         this._onlineRole= onlineRole;
         this._refMsg= refMsg;
@@ -48,6 +48,10 @@ class OnlineGroupManager{
                 reply+="( tu n'es pas marqué comme étant en ligne, pour y remédier réagit au message <"+this._refMsg.url+"> )\n";
             }
 
+            if(this._bot.worker.request({name:'arena-status', user: user})){
+                reply+="( 👑=créateur; ⚔=membre \t d'une arène )\n"
+            }
+
             while( onlineUsers.length>0 ){
                 let c= reply.length;
 
@@ -60,6 +64,17 @@ class OnlineGroupManager{
                 }
                 else{
                     name= "\t<@" + u.id + ">";
+                }
+
+                let answer= this._bot.worker.request({name:'arena-status', user: u});
+                let s= answer['status'];
+                if(answer && s){
+                    if(s==="owner"){
+                        name+= " 👑";
+                    }
+                    else if(s==="member"){
+                        name+= " ⚔";
+                    }
                 }
 
                 if((name.length+c+4)<2000){
@@ -77,7 +92,7 @@ class OnlineGroupManager{
     }
 
     _addOnlineRoleTo(user){
-        if(user.id!==this._client.user.id){
+        if(user.id!==this._bot.user.id){
             let member= this._botChannel.guild.member(user);
             if(member!=null && !(member.roles.has(this._onlineRole))){
                 member.addRole(this._onlineRole).then(member => {
@@ -92,7 +107,7 @@ class OnlineGroupManager{
     }
 
     _removeOnlineRoleFrom(user){
-        if(user.id!==this._client.user.id){
+        if(user.id!==this._bot.user.id){
             let member= this._botChannel.guild.member(user);
             if(member!=null && !(member.roles.has(this._onlineRole))){;
                 member.removeRole(this._onlineRole).then(member => {

@@ -2,6 +2,8 @@ const ogm= require('./onlineGroupManager');
 
 const fcm= require('./friendCodeManager');
 
+const am= require('./arenaManager');
+
 class Worker{
     
 
@@ -10,6 +12,7 @@ class Worker{
 
         this._ogm= null;
         this._fcm= null;
+        this._am= null;
 
         this._errorHandlerSteup();
     }
@@ -21,6 +24,7 @@ class Worker{
     ready_setup(){
         this._readyOGM();
         this._readyFCM();
+        this._readyAM();
     }
 
     _errorHandlerSteup(){
@@ -109,7 +113,8 @@ class Worker{
 
     _readyFCM(){
         let guild= this.bot.guilds.get(this._guildID);
-        if(this._baseDataCheck.validity({guild:guild},this._baseDataCheck.GUILDOK)){
+        let obj= {guild:guild};
+        if(this._baseDataCheck.validity(obj,this._baseDataCheck.GUILDOK)){
             this._fcm= new fcm.FriendCodeManager(this.bot, guild);
             this._fcm.adminID= this._masterID;
     
@@ -123,15 +128,49 @@ class Worker{
         }
     }
 
+    _readyAM(){
+        let onlineChannel= this.bot.channels.get(this._onlineChannelID);
+        let obj= {onlineChannel:onlineChannel};
+        if(this._baseDataCheck.validity(obj,this._baseDataCheck.ONLINECHANNELOK)){
+            this._am= new am.ArenaManager(this.bot, onlineChannel);
+
+            this._am.loadArenas();
+        }
+        else{
+            console.log(this._baseDataCheck.report(obj));
+
+            this.bot.destroy();
+        }
+
+    }
+
     reactionAdd(reaction, user){
-        if (this._ogm!==null && user.id!==this.bot.user.id){
-            this._ogm.reactionAdd(reaction,user);
+        if(user.id!==this.bot.user.id){
+            if (this._ogm!==null){
+                this._ogm.reactionAdd(reaction,user);
+            }
+
+            if (this._am!==null){
+                this._am.reactionAdd(reaction, user);
+            }
         }
     }
 
     reactionRemove(reaction, user){
-        if (this._ogm!==null && user.id!==this.bot.user.id){
-            this._ogm.reactionRemove(reaction,user);
+        if(user.id!==this.bot.user.id){
+            if (this._ogm!==null){
+                this._ogm.reactionRemove(reaction,user);
+            }
+
+            if (this._am!==null){
+                this._am.reactionRemove(reaction, user);
+            }
+        }
+    }
+
+    messageDelete(message){
+        if(this._am){
+            this._am.messageDelete(message);
         }
     }
 
@@ -146,6 +185,9 @@ class Worker{
         let coreCmd= splitCmd[0].toLowerCase();
         let args= splitCmd.slice(1);
 
+        let hasAttachments= (message.attachments && message.attachments.size > 0);
+        console.log(`cmd with att? ${hasAttachments}`);
+
         if(message.channel.id === this._onlineChannelID){
             if(coreCmd==="ping"){
                 console.log("[cmd] !ping");
@@ -156,17 +198,40 @@ class Worker{
                 this._ogm.kijouRequestFrom(message.author);
             }
             else if((coreCmd==="codeami" || coreCmd==="ca" || coreCmd==="friendcode" || coreCmd==="fc" || coreCmd==="codami" || coreCmd==="kodami" || coreCmd==="code-ami"
-                    || coreCmd==="friend-code") && this._fcm)
+                    || coreCmd==="friend-code"|| coreCmd==="ça") && this._fcm)
             {
                 console.log(`[cmd] !${coreCmd}`);
                 this._fcm.command(args, message.author, message.channel);
+            }
+            else if(coreCmd.match(/^a(r(e|é|è|ê)n(e|a))?$/) && this._am){
+                console.log(`[cmd] !${coreCmd}`);
+                this._am.command(args, message.author, message.channel,
+                    (hasAttachments? message.attachments.first().count : null));
+            }
+            else if(coreCmd.match(/^a(r(e|é|è|ê)n(e|a))?s$/) && this._am){
+                console.log(`[cmd] !${coreCmd}`);
+                if(args.length<=0){
+                    this._am.postArenaList(message.channel);
+                }
+                else{
+                    this._am.command(args, message.author, message.channel,
+                        (hasAttachments? message.attachments.first().count : null));
+                }
+            }
+            else if(coreCmd.match(/^q(uit)?$/) && this._am){
+                console.log(`[cmd] !${coreCmd}`);
+                this._am._qCall(message.author);
             }
         }
     }
 
     dMessage(message){
+        console.log("Recieving DMessage…");
         if(message.content.startsWith('!')){
             this.processDMCommand(message);
+        }
+        else if(this._am){
+            this._am.dMessage(message);
         }
     }
 
@@ -174,6 +239,8 @@ class Worker{
         let splitCmd= message.content.substr(1).split(" ");
         let coreCmd= splitCmd[0].toLowerCase();
         let args= splitCmd.slice(1);
+
+        let hasAttachments= (message.attachments && message.attachments.size > 0);
 
         if(coreCmd==="ping"){
             console.log("[dm cmd] !ping");
@@ -192,10 +259,33 @@ class Worker{
             this._cmdHelpRequestFrom(message.author);
         }
         else if((coreCmd==="codeami" || coreCmd==="ca" || coreCmd==="friendcode" || coreCmd==="fc" || coreCmd==="codami" || coreCmd==="kodami" || coreCmd==="code-ami"
-                    || coreCmd==="friend-code") && this._fcm)
+                    || coreCmd==="friend-code" || coreCmd==="ça") && this._fcm)
         {
             console.log(`[dm cmd] !${coreCmd}`);
             this._fcm.command(args, message.author, message.channel);
+        }
+        else if(coreCmd.match(/^a(r(e|é|è|ê)n(e|a))?$/) && this._am){
+            console.log(`[cmd] !${coreCmd}`);
+            this._am.command(args, message.author, message.channel,
+                (hasAttachments? message.attachments.first(): null));
+        }
+        else if(coreCmd.match(/^a(r(e|é|è|ê)n(e|a))?s$/) && this._am){
+            console.log(`[cmd] !${coreCmd}`);
+            if(args.length<=0){
+                this._am.postArenaList(message.channel);
+            }
+            else{
+                console.log(`hattcmnts ${hasAttachments}`);
+                this._am.command(args, message.author, message.channel,
+                    (hasAttachments? message.attachments.first(): null));
+            }
+        }
+        else if(coreCmd.match(/^q(uit)?$/) && this._am){
+            console.log(`[cmd] !${coreCmd}`);
+            let a= this._am.getCreatedArena(message.author);
+            if(a){
+                this._am._endArena(a);
+            }
         }
     }
 
@@ -207,6 +297,10 @@ class Worker{
         }
         if(this._fcm){
             txt+="\t`!ca | !codeami`\t📬🎮\n\t\t*gestion des codes ami; tape `!codeami !help` pour plus d'infos*\n"
+        }
+        if(this._am){
+            txt+="\t`!arene | !a` \t📬🎮\n\t\t*Création d'arène; tape `!arene !help` pour plus d'infos*\n"
+            txt+="\t`!arenes | !as` \t📬🎮\n\t\t*Liste arènes dispos, équvialent à `!arene !list`*\n"
         }
         txt+= "\t`!version | !ver | !v`\t📬\n\t\t*version courante du bot*\n";
         txt+= "\t`!help | !h | !cmd`\t📬\n\t\t*affiche cette aide*\n\n";
@@ -223,6 +317,47 @@ class Worker{
                 this._fcm.deleteFriendCode(member.user);
             }
         }
+    }
+
+    request(requestObject){
+        let rq= requestObject.name.toLowerCase();
+
+        if(rq==='friend-code' && this._fcm){
+            let usr= requestObject['user'];
+            let fc= null;
+            if(usr){
+                fc= this._fcm.getFriendCode(usr);
+            }
+
+            return {'friendCode':fc, 'user': usr};
+        }
+        else if(rq==='friend-code-update' && this._am){
+            let usr= requestObject['user'];
+            let fc= requestObject['friendCode'];
+            if(usr){
+                this._am._fcUpdate(usr, fc);
+            }
+        }
+        else if(rq==='friend-code-delete' && this._am){
+            let usr= requestObject['user'];
+            if(usr){
+                this._am._fcDelete(usr);
+            }
+        }
+        else if(rq==='arena-status' && this._am){
+            let usr= requestObject['user'];
+            let status=null;
+            if(usr){
+                status=(this._am.getCreatedArena(usr))?
+                                'owner'
+                            : (this._am._userArenaDict[usr.id])?
+                                'member'
+                                : '';
+            }
+            return {'status': status, 'user': usr};
+        }
+
+        return null;
     }
 
     set master(id){

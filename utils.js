@@ -75,4 +75,52 @@ JSONCheck ={
     },
 };
 
+Misc ={
+    findCachedUsersFromString: async (name, guild) =>{
+        let idRx=/^[0-9]{18}$/;
+        let mentionRx=/^<@!?[0-9]{18}>$/;
+
+        if(name.match(idRx) || name.match(mentionRx)){
+            let v= (name.match(mentionRx))?name.match(/[0-9]{18}/)[0]:name;        
+            
+            let r= guild.client.users.find(u => u.id===v);
+
+            return [r]
+        }
+
+        let tn= (name.startsWith('@')?name.slice(1):name);
+
+        let members= [];
+        guild.members.forEach(m =>{
+            if (m.nickname && (m.nickname.toLowerCase()===tn.toLowerCase())){
+                members.push(m.user);
+            }
+        })
+
+        let users= [];
+        guild.client.users.forEach(u => {
+            if(u.username.toLowerCase()===tn.toLowerCase() || u.tag===tn){
+                users.push(u);
+            }
+        });
+
+        members.forEach(m => {
+            let mid= m.id;
+            
+            let i= 0;
+            while(i<users.length){
+                if(users[i].id===mid){
+                    users.splice(i,1);
+                }
+                else{
+                    ++i;
+                }
+            }
+        })
+
+        return users.concat(members)
+    },
+};
+
 module.exports.JSONCheck= JSONCheck;
+module.exports.Misc= Misc;
