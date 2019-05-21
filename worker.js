@@ -186,7 +186,6 @@ class Worker{
         let args= splitCmd.slice(1);
 
         let hasAttachments= (message.attachments && message.attachments.size > 0);
-        console.log(`cmd with att? ${hasAttachments}`);
 
         if(message.channel.id === this._onlineChannelID){
             if(coreCmd==="ping"){
@@ -282,10 +281,7 @@ class Worker{
         }
         else if(coreCmd.match(/^q(uit)?$/) && this._am){
             console.log(`[cmd] !${coreCmd}`);
-            let a= this._am.getCreatedArena(message.author);
-            if(a){
-                this._am._endArena(a);
-            }
+            this._am._qCall(message.author);
         }
     }
 

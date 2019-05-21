@@ -72,7 +72,7 @@ class Arena{
     }
 
     async assignFromSavedObject(o, bot){
-        this._friendsOnly= o._friendsOnly;
+        this._friendsOnly= o.friendsOnly;
         this._arenaID= o.ID;
         this._accessCode= o.accessCode;
         this._availableSlots= o.availableSlot;
@@ -83,7 +83,7 @@ class Arena{
             this._creator= u;
         })
         .catch(err => {
-            console.log(`[Arena] couldn't find creator ${o.creator.id}`);
+            console.log(`[Arena] couldn't find creator ${o.creatorID}`);
             console.log(err);
             this._creator= null;
         });
@@ -91,7 +91,7 @@ class Arena{
         let t= [];
         if(o.members){
             await Promise.all(o.members.map(async id => {
-                if(id && id!==o.creator.id){
+                if(id && id!==o.creatorID){
                     await bot.fetchUser(id).then(u => {
                         t.push(u);
                     })
@@ -152,12 +152,12 @@ class Arena{
     }
 
     _addPlayer(user){
-        if(!this._knowMembers.includes(user.id));
-            this._knowMembers.push(user.id);
+        if(!this._knowMembers.find(u => u.id===user.id));
+            this._knowMembers.push(user);
     }
 
     _removePlayer(user){
-        let i= this._knowMembers.indexOf(user.id);
+        let i= this._knowMembers.findIndex(u => u.id===user.id);
         if(i>0 && i< this._knowMembers.length){
             this._knowMembers.splice(i,1);
             return true;
@@ -265,7 +265,7 @@ class ArenaContainer{
             if(this._arena && this._accessMsg.reactions && (reac= this._accessMsg.reactions.find(r =>{return (r.emoji.name==='⚔' && r.count>1);}))){
                 await reac.fetchUsers().then( users => {
                     users.tap( usr=>{
-                        if(!this._arena.hasMember(usr)){
+                        if(!this._arena.hasMember(usr) && usr.id!==bot.user.id){
                             this._arena.joining(usr);
                         }
                     });
@@ -274,15 +274,6 @@ class ArenaContainer{
                     console.log(`[AC] couldn't find reaction's users of ⚔ on ctrlMessage ${this._ctrlMsg.id}`);
                     console.log(err);
                 });
-
-                let rejects= [];
-                this._arena.tap(usr => {
-                    if(! reac.users.find( u => {u.id === usr.id})){
-                        rejects.push(usr);
-                    }
-                });
-
-                rejects.tap(usr => {this._arena.leaving(usr);});
             }
         }
 
@@ -332,7 +323,6 @@ class ArenaManager{
     loadArenas(){
         let data= fs.readFileSync(this.arenaJSONFile);
         this._arenaList= {};
-        let miss= false;
         if(data){
             let tmpList= JSON.parse(data);
 
@@ -357,7 +347,6 @@ class ArenaManager{
                         .catch(err => {console.log("[AC Load] error deleting old accessMessage"); console.log(err);})
                     }
 
-                    miss= true;
                     console.log(`[AM load] Couldn't load user ${key}'s arena…`);
                 }
             });
@@ -366,9 +355,7 @@ class ArenaManager{
             console.log(`[FC loading] Error reading data from '${this.arenaJSONFile}'!`);
         }
 
-        if(miss){
-            this.saveArenas();
-        }
+        this.saveArenas();
     }
 
     saveArenas(){
@@ -661,7 +648,7 @@ class ArenaManager{
 
         let embed= new Discord.RichEmbed()
             .setTitle("**=== NEW ARENA ===**")
-            .setAuthor(`${arena.creator.username}`,`${arena.creator.avatarURL}`)
+            .setAuthor(`${arena.creator.username}`,`${arena.creator.displayAvatarURL}`)
             .setColor((arena.isComplete)?0x64f864:0x9cc1bb)
             .setTimestamp()
             .setThumbnail("https://media.discordapp.net/attachments/536855284195262516/551017392243867659/ring_ssbu_icon_kinda.png")
@@ -673,7 +660,7 @@ class ArenaManager{
             .addField("Réaction '🛑': ", "\tpour fermer cette arène.\n\n")
             .addBlankField()
             .addField("--- **Paramètres** ---")
-            .addField(`*ID*: \t\t**\`${(arena.arenaID)?arena.ID:(arena.imgUrl?'voir image':' ')}\`**`,`\t*ID de l'arène (n'est pas le nom)*`)
+            .addField(`*ID*: \t\t**\`${(arena.arenaID)?arena.arenaID:(arena.imgUrl?'voir image':' ')}\`**`,`\t*ID de l'arène (n'est pas le nom)*`)
             .addField(`*Type*: \t\t**\`${(arena.isFriendsOnly)?'Amis uniquement':"Publique"}\`**`,
                         `\t*${(arena.isFriendsOnly)?
                             `Seuls tes amis switch peuvent entrer cette arène. ${(hasFC)?"":"(ton code ami n'est pas renseigné)"}`
@@ -703,7 +690,7 @@ class ArenaManager{
 
             let embed= new Discord.RichEmbed()
                 .setTitle("**=== NEW ARENA! ===**")
-                .setAuthor(`${(member && member.nickname)?member.nickname:arena.creator.username}`,`${arena.creator.avatarURL}`)
+                .setAuthor(`${(member && member.nickname)?member.nickname:arena.creator.username}`,`${arena.creator.displayAvatarURL}`)
                 .setColor(0x64f864)
                 .setTimestamp()
                 .setThumbnail("https://media.discordapp.net/attachments/536855284195262516/551017392243867659/ring_ssbu_icon_kinda.png")
@@ -770,7 +757,7 @@ class ArenaManager{
 
                     let embed= new Discord.RichEmbed()
                     .setTitle("**==== ARENA UPDATE ====**")
-                    .setAuthor(`${(m && m.nickname)?m.nickname:a.creator.username}`,`${a.creator.avatarURL}`)
+                    .setAuthor(`${(m && m.nickname)?m.nickname:a.creator.username}`,`${a.creator.displayAvatarURL}`)
                     .setColor((a.isComplete)?0x64f864:0x9cc1bb)
                     .setTimestamp()
                     .setDescription(`L'arène de @${(m && m.nickname)?m.nickname:a.creator.username} a modifié son arène:`)
@@ -853,7 +840,7 @@ class ArenaManager{
         return r;
     }
 
-    _arenaCall(user, args){
+    _arenaCall(user, args= null){
         let aInfo= (args)? this._extractArenaInfo(args.join(" ")) : null;
 
         if(this._arenaList[user.id] && this._arenaList[user.id].arena){
@@ -883,7 +870,7 @@ class ArenaManager{
         }
         else if(this._userArenaDict[user.id]){
             let amsg= null;
-            if(amsg=this._arenaList[this._userArenaDict[user.id]].accessMessage){
+            if(amsg=this._arenaList[this._userArenaDict[user.id].creator.id].accessMessage){
                 user.send(`Tu participe déjà à l'arène de ${this._userArenaDict[user.id].creator}.\n`
                         +   `Dé-réagit au message <${amsg.url}>`);
             }
@@ -954,15 +941,17 @@ class ArenaManager{
         let m= this._onlineChannel.guild.member(arena.creator.id);
 
         arena.members.forEach(p => {
-            if(p){
+            if(p && p.id!==arena.creator.id){
                 p.send(`- *${(m && m.nickname)?m.nickname:arena.creator.username} a officiellement fermé son arène* -`);
+
+                this._leave(p, arena, true);
             }
         });
 
         if(ctrlMsg){
             let embed= new Discord.RichEmbed()
                 .setTitle("**=== DELETED ARENA ===**")
-                .setAuthor(`${(m && m.nickname)?m.nickname:arena.creator.username}`,`${arena.creator.avatarURL}`)
+                .setAuthor(`${(m && m.nickname)?m.nickname:arena.creator.username}`,`${arena.creator.displayAvatarURL}`)
                 .setColor(0xC80000)
                 .setTimestamp()
                 .setThumbnail('https://media.discordapp.net/attachments/536855284195262516/551018508666929152/ring_ssbu_icon_kinda_g.png')
@@ -974,7 +963,7 @@ class ArenaManager{
 
             let embed= new Discord.RichEmbed()
                 .setTitle("**=== DELETED ARENA ===**")
-                .setAuthor(`${(m && m.nickname)?m.nickname:arena.creator.username}`,`${arena.creator.avatarURL}`)
+                .setAuthor(`${(m && m.nickname)?m.nickname:arena.creator.username}`,`${arena.creator.displayAvatarURL}`)
                 .setColor(0xC80000)
                 .setTimestamp()
                 .setThumbnail('https://media.discordapp.net/attachments/536855284195262516/551018508666929152/ring_ssbu_icon_kinda_g.png')
@@ -1010,8 +999,6 @@ class ArenaManager{
                 if(arena.joining(user)){
                     let a= null;
                     if((a=this._userArenaDict[user.id]) && a.creator.id!=arena.creator.id){
-                        this._userArenaDict[user.id];
-
                         this._leave(user, a);
                     }
 
@@ -1024,12 +1011,13 @@ class ArenaManager{
                 await this._bot.fetchUser(arena.creator.id).catch(err => {console.log(`[AM joining] couldn't fetch user ${arena.creator.id}`);});
                 let m= this._onlineChannel.guild.member(arena.creator.id);
 
-                let embed= new Discord.RichEmbed.setTitle("**==== ARENA JOIN ====**")
-                .setAuthor(`${(m && m.nickname)?m.nickname:arena.creator.username}`,`${arena.creator.avatarURL}`)
+                let embed= new Discord.RichEmbed()
+                .setTitle("**==== ARENA JOIN ====**")
+                .setAuthor(`${(m && m.nickname)?m.nickname:arena.creator.username}`,`${arena.creator.displayAvatarURL}`)
                 .setTimestamp()
                 .setDescription(`L'arène de @${(m && m.nickname)?m.nickname:arena.creator.username} a les paramètres suivants:`)
                 .addBlankField()
-                .addField(`*ID*: \t\t**\`${(arena.arenaID)?arena.ID:(arena.imgUrl?'voir image':' ')}\`**`,`\t*ID de l'arène (n'est pas le nom)*`)
+                .addField(`*ID*: \t\t**\`${(arena.arenaID)?arena.arenaID:(arena.imgUrl?'voir image':' ')}\`**`,`\t*ID de l'arène (n'est pas le nom)*`)
                 .addField(`*Type*: \t\t**\`${(arena.isFriendsOnly)?'Amis uniquement':"Publique"}\`**`,
                             `\t*${(arena.isFriendsOnly)?
                                 'Seuls les amis de ce joueur peuvent entrer son arène.'
@@ -1045,7 +1033,7 @@ class ArenaManager{
                 
                 await this._bot.fetchUser(user.id).catch(err => {console.log(`[AM joining info] couldn't fetch user ${user.id}`);});
                 m= this._onlineChannel.guild.member(user.id);
-                arena.creator.send(`- *${(m && m.nickname)?m.nickname:arena.creator.username} veut de joindre à votre arène* -`);
+                arena.creator.send(`- *${(m && m.nickname)?m.nickname:user.username} veut se joindre à votre arène* -`);
         
             }
             else{
@@ -1061,7 +1049,7 @@ class ArenaManager{
         }
     }
 
-    async _leave(user,arena){
+    async _leave(user, arena, quiet=false){
         if(arena.isComplete){
             if(arena.creator.id!==user.id){
                 arena.leaving(user);
@@ -1072,15 +1060,23 @@ class ArenaManager{
                 await this._bot.fetchUser(arena.creator.id).catch(err => {console.log(`[AM joining] couldn't fetch user ${arena.creator.id}`);});
                 let m= this._onlineChannel.guild.member(arena.creator.id);
                 
-                user.send(`==== ARENA LEAVE ===\nTu as officiellement quitté l'arène de @${(m && m.nickname)?m.nickname:arena.creator.username}!`);
-                
+                if(!quiet){
+                    user.send(`==== ARENA LEAVE ===\nTu as officiellement quitté l'arène de @${(m && m.nickname)?m.nickname:arena.creator.username}!`);
+                }
+
                 await this._bot.fetchUser(user.id).catch(err => {console.log(`[AM joining info] couldn't fetch user ${user.id}`);});
                 m= this._onlineChannel.guild.member(user.id);
-                arena.creator.send(`- *${(m && m.nickname)?m.nickname:arena.creator.username} a officiellement quitté votre arène* -`);
+
+                if(!quiet){
+                    arena.creator.send(`- *${(m && m.nickname)?m.nickname:arena.creator.username} a officiellement quitté votre arène* -`);
+                }
             }
             else{
                 this._endArena(arena);
             }
+        }
+        else{
+            delete this._userArenaDict[user.id];
         }
     }
 
